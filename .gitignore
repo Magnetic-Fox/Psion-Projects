@@ -7,3 +7,9 @@
 *.marm
 *.wins
 *.winc
+
+# Files created by VC++ 5.0
+
+*.ncb
+*.plg
+*.opt
