@@ -1,3 +1,9 @@
 # Exports library files
 
 *.exp
+
+# Exported makefiles (these can be created by MAKMAKE tool)
+
+*.marm
+*.wins
+*.winc
