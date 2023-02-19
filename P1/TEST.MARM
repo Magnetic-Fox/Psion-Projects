@@ -1,0 +1,365 @@
+
+!if "$(OS)" == "Windows_NT"
+ERASE = @erase 2>>nul
+!else
+ERASE = @erase
+!endif
+
+
+# EPOC DEFINITIONS
+
+INCDIR  = -I "..\..\PROJEKTY\P1" -I- -I "..\..\EPOC32\INCLUDE"
+
+GCCFLAGS=-c -nostdinc -Wall -Wno-ctor-dtor-privacy -mcpu-arm710 -mapcs-32 \
+		-mshort-load-bytes -msoft-float -O -fcheck-new -fvtable-thunks
+
+GCCDEFS = -D__SYMBIAN32__ -D__PSISOFT32__ -D__GCC32__ -D__EPOC32__ -D__MARM__ -D__EXE__ $(USERDEFS)
+
+EPOCBLDREL = ..\..\EPOC32\BUILD\PROJEKTY\MARM\REL
+EPOCTRGREL = ..\..\EPOC32\RELEASE\MARM\REL
+
+EPOCBLDDEB = ..\..\EPOC32\BUILD\PROJEKTY\MARM\DEB
+EPOCTRGDEB = ..\..\EPOC32\RELEASE\MARM\DEB
+
+EPOCBLDUREL = ..\..\EPOC32\BUILD\PROJEKTY\MARM\UREL
+EPOCTRGUREL = ..\..\EPOC32\RELEASE\MARM\UREL
+
+EPOCBLDUDEB = ..\..\EPOC32\BUILD\PROJEKTY\MARM\UDEB
+EPOCTRGUDEB = ..\..\EPOC32\RELEASE\MARM\UDEB
+
+
+GCCREL = gcc -s -fomit-frame-pointer $(GCCFLAGS) -DNDEBUG $(GCCDEFS)
+GCCDEB = gcc -g $(GCCFLAGS) -D_DEBUG $(GCCDEFS)
+GCCUREL = gcc -s -fomit-frame-pointer $(GCCFLAGS) -DNDEBUG -D_UNICODE $(GCCDEFS)
+GCCUDEB = gcc -g $(GCCFLAGS) -D_DEBUG -D_UNICODE $(GCCDEFS)
+
+
+# EPOC PSEUDOTARGETS
+
+REL : \
+	MAKEWORKREL \
+	"$(EPOCTRGREL)\TEST.EXE"
+
+DEB : \
+	MAKEWORKDEB \
+	"$(EPOCTRGDEB)\TEST.EXE"
+
+UREL : \
+	MAKEWORKUREL \
+	"$(EPOCTRGUREL)\TEST.EXE"
+
+UDEB : \
+	MAKEWORKUDEB \
+	"$(EPOCTRGUDEB)\TEST.EXE"
+
+
+CLEAN : CLEANREL CLEANDEB CLEANUREL CLEANUDEB
+
+MAKEWORK : MAKEWORKREL MAKEWORKDEB MAKEWORKUREL MAKEWORKUDEB
+
+
+# REAL TARGET - BUILD VARIANT REL
+
+CLEANREL : 
+	-$(ERASE) "..\..\EPOC32\RELEASE\MARM\REL\TEST.EXE"
+	-$(ERASE) "..\..\EPOC32\RELEASE\MARM\REL\TEST.map"
+	-$(ERASE) "..\..\EPOC32\BUILD\PROJEKTY\MARM\REL\TEST.in"
+	-$(ERASE) "..\..\EPOC32\BUILD\PROJEKTY\MARM\REL\TEST.bas"
+	-$(ERASE) "..\..\EPOC32\RELEASE\MARM\REL\TEST.sym"
+	-$(ERASE) "..\..\EPOC32\RELEASE\MARM\REL\TEST.lib"
+	-$(ERASE) "..\..\EPOC32\BUILD\PROJEKTY\MARM\REL\TEST.o"
+	-$(ERASE) "..\..\EPOC32\BUILD\PROJEKTY\MARM\REL\TEST.def"
+
+
+MAKEWORKREL : "\EPOC32\RELEASE\MARM\REL" "\EPOC32\BUILD\PROJEKTY\MARM\REL"
+
+"\EPOC32\RELEASE\MARM\REL" : 
+	@if not exist "\EPOC32" md "\EPOC32"
+	@if not exist "\EPOC32\RELEASE" md "\EPOC32\RELEASE"
+	@if not exist "\EPOC32\RELEASE\MARM" md "\EPOC32\RELEASE\MARM"
+	@if not exist "\EPOC32\RELEASE\MARM\REL" md "\EPOC32\RELEASE\MARM\REL"
+
+"\EPOC32\BUILD\PROJEKTY\MARM\REL" : 
+	@if not exist "\EPOC32" md "\EPOC32"
+	@if not exist "\EPOC32\BUILD" md "\EPOC32\BUILD"
+	@if not exist "\EPOC32\BUILD\PROJEKTY" md "\EPOC32\BUILD\PROJEKTY"
+	@if not exist "\EPOC32\BUILD\PROJEKTY\MARM" md "\EPOC32\BUILD\PROJEKTY\MARM"
+	@if not exist "\EPOC32\BUILD\PROJEKTY\MARM\REL" md "\EPOC32\BUILD\PROJEKTY\MARM\REL"
+
+
+LIBS= \
+	"$(EPOCTRGREL)\EUSER.LIB"
+
+"$(EPOCTRGREL)\TEST.EXE" : "$(EPOCTRGREL)\EEXE.o" "$(EPOCBLDREL)\TEST.in" $(LIBS)
+	ld -s -e _E32Startup \
+		--base-file "$(EPOCBLDREL)\TEST.bas" \
+		-o "$(EPOCBLDREL)\TEST.EXE" "$(EPOCTRGREL)\EEXE.o" \
+		--whole-archive "$(EPOCBLDREL)\TEST.in" \
+		--no-whole-archive $(LIBS)
+	dlltool --output-exp "TEST.exp" \
+		--base-file "$(EPOCBLDREL)\TEST.bas" \
+		"$(EPOCTRGREL)\EEXE.o" "$(EPOCBLDREL)\TEST.in"  $(LIBS)
+	ld -s -e _E32Startup \
+		-Map "$(EPOCTRGREL)\TEST.map" \
+		-o "$(EPOCBLDREL)\TEST.EXE" "TEST.exp" \
+		"$(EPOCTRGREL)\EEXE.o" \
+		--whole-archive "$(EPOCBLDREL)\TEST.in" \
+		--no-whole-archive $(LIBS)
+	petran "$(EPOCBLDREL)\TEST.EXE" $@ \
+		 -nocall -uid1 0x1000007a -uid2 0x00000000 -uid3 0x00000000
+#	del "TEST.exp"
+#	del "$(EPOCBLDREL)\TEST.EXE"
+
+OBJECTS= \
+	$(EPOCBLDREL)\TEST.o
+
+"$(EPOCBLDREL)\TEST.in" : $(OBJECTS)
+	if exist $@ del $@
+	cd "$(EPOCBLDREL)"
+	ar -M < <<
+CREATE $(@F)
+ADDMOD $(**F)
+SAVE
+END
+<<
+	ranlib $(@F)
+	cd "$(MAKEDIR)"
+
+
+# REAL TARGET - BUILD VARIANT DEB
+
+CLEANDEB : 
+	-$(ERASE) "..\..\EPOC32\RELEASE\MARM\DEB\TEST.EXE"
+	-$(ERASE) "..\..\EPOC32\RELEASE\MARM\DEB\TEST.map"
+	-$(ERASE) "..\..\EPOC32\BUILD\PROJEKTY\MARM\DEB\TEST.in"
+	-$(ERASE) "..\..\EPOC32\BUILD\PROJEKTY\MARM\DEB\TEST.bas"
+	-$(ERASE) "..\..\EPOC32\RELEASE\MARM\DEB\TEST.sym"
+	-$(ERASE) "..\..\EPOC32\RELEASE\MARM\DEB\TEST.lib"
+	-$(ERASE) "..\..\EPOC32\BUILD\PROJEKTY\MARM\DEB\TEST.o"
+	-$(ERASE) "..\..\EPOC32\BUILD\PROJEKTY\MARM\DEB\TEST.def"
+
+
+MAKEWORKDEB : "\EPOC32\RELEASE\MARM\DEB" "\EPOC32\BUILD\PROJEKTY\MARM\DEB"
+
+"\EPOC32\RELEASE\MARM\DEB" : 
+	@if not exist "\EPOC32" md "\EPOC32"
+	@if not exist "\EPOC32\RELEASE" md "\EPOC32\RELEASE"
+	@if not exist "\EPOC32\RELEASE\MARM" md "\EPOC32\RELEASE\MARM"
+	@if not exist "\EPOC32\RELEASE\MARM\DEB" md "\EPOC32\RELEASE\MARM\DEB"
+
+"\EPOC32\BUILD\PROJEKTY\MARM\DEB" : 
+	@if not exist "\EPOC32" md "\EPOC32"
+	@if not exist "\EPOC32\BUILD" md "\EPOC32\BUILD"
+	@if not exist "\EPOC32\BUILD\PROJEKTY" md "\EPOC32\BUILD\PROJEKTY"
+	@if not exist "\EPOC32\BUILD\PROJEKTY\MARM" md "\EPOC32\BUILD\PROJEKTY\MARM"
+	@if not exist "\EPOC32\BUILD\PROJEKTY\MARM\DEB" md "\EPOC32\BUILD\PROJEKTY\MARM\DEB"
+
+
+LIBS= \
+	"$(EPOCTRGDEB)\EUSER.LIB"
+
+"$(EPOCTRGDEB)\TEST.EXE" : "$(EPOCTRGDEB)\EEXE.o" "$(EPOCBLDDEB)\TEST.in" $(LIBS)
+	ld -e _E32Startup \
+		--base-file "$(EPOCBLDDEB)\TEST.bas" \
+		-o "$(EPOCBLDDEB)\TEST.EXE" "$(EPOCTRGDEB)\EEXE.o" \
+		--whole-archive "$(EPOCBLDDEB)\TEST.in" \
+		--no-whole-archive $(LIBS)
+	dlltool --output-exp "TEST.exp" \
+		--base-file "$(EPOCBLDDEB)\TEST.bas" \
+		"$(EPOCTRGDEB)\EEXE.o" "$(EPOCBLDDEB)\TEST.in"  $(LIBS)
+	ld -e _E32Startup \
+		-Map "$(EPOCTRGDEB)\TEST.map" \
+		-o "$(EPOCBLDDEB)\TEST.EXE" "TEST.exp" \
+		"$(EPOCTRGDEB)\EEXE.o" \
+		--whole-archive "$(EPOCBLDDEB)\TEST.in" \
+		--no-whole-archive $(LIBS)
+	objcopy -X "$(EPOCBLDDEB)\TEST.EXE" "$(EPOCTRGDEB)\TEST.sym"
+	petran "$(EPOCBLDDEB)\TEST.EXE" $@ \
+		 -nocall -uid1 0x1000007a -uid2 0x00000000 -uid3 0x00000000
+#	del "TEST.exp"
+#	del "$(EPOCBLDDEB)\TEST.EXE"
+
+OBJECTS= \
+	$(EPOCBLDDEB)\TEST.o
+
+"$(EPOCBLDDEB)\TEST.in" : $(OBJECTS)
+	if exist $@ del $@
+	cd "$(EPOCBLDDEB)"
+	ar -M < <<
+CREATE $(@F)
+ADDMOD $(**F)
+SAVE
+END
+<<
+	ranlib $(@F)
+	cd "$(MAKEDIR)"
+
+
+# REAL TARGET - BUILD VARIANT UREL
+
+CLEANUREL : 
+	-$(ERASE) "..\..\EPOC32\RELEASE\MARM\UREL\TEST.EXE"
+	-$(ERASE) "..\..\EPOC32\RELEASE\MARM\UREL\TEST.map"
+	-$(ERASE) "..\..\EPOC32\BUILD\PROJEKTY\MARM\UREL\TEST.in"
+	-$(ERASE) "..\..\EPOC32\BUILD\PROJEKTY\MARM\UREL\TEST.bas"
+	-$(ERASE) "..\..\EPOC32\RELEASE\MARM\UREL\TEST.sym"
+	-$(ERASE) "..\..\EPOC32\RELEASE\MARM\UREL\TEST.lib"
+	-$(ERASE) "..\..\EPOC32\BUILD\PROJEKTY\MARM\UREL\TEST.o"
+	-$(ERASE) "..\..\EPOC32\BUILD\PROJEKTY\MARM\UREL\TESTU.def"
+
+
+MAKEWORKUREL : "\EPOC32\RELEASE\MARM\UREL" "\EPOC32\BUILD\PROJEKTY\MARM\UREL"
+
+"\EPOC32\RELEASE\MARM\UREL" : 
+	@if not exist "\EPOC32" md "\EPOC32"
+	@if not exist "\EPOC32\RELEASE" md "\EPOC32\RELEASE"
+	@if not exist "\EPOC32\RELEASE\MARM" md "\EPOC32\RELEASE\MARM"
+	@if not exist "\EPOC32\RELEASE\MARM\UREL" md "\EPOC32\RELEASE\MARM\UREL"
+
+"\EPOC32\BUILD\PROJEKTY\MARM\UREL" : 
+	@if not exist "\EPOC32" md "\EPOC32"
+	@if not exist "\EPOC32\BUILD" md "\EPOC32\BUILD"
+	@if not exist "\EPOC32\BUILD\PROJEKTY" md "\EPOC32\BUILD\PROJEKTY"
+	@if not exist "\EPOC32\BUILD\PROJEKTY\MARM" md "\EPOC32\BUILD\PROJEKTY\MARM"
+	@if not exist "\EPOC32\BUILD\PROJEKTY\MARM\UREL" md "\EPOC32\BUILD\PROJEKTY\MARM\UREL"
+
+
+LIBS= \
+	"$(EPOCTRGUREL)\EUSER.LIB"
+
+"$(EPOCTRGUREL)\TEST.EXE" : "$(EPOCTRGUREL)\EEXE.o" "$(EPOCBLDUREL)\TEST.in" $(LIBS)
+	ld -s -e _E32Startup \
+		--base-file "$(EPOCBLDUREL)\TEST.bas" \
+		-o "$(EPOCBLDUREL)\TEST.EXE" "$(EPOCTRGUREL)\EEXE.o" \
+		--whole-archive "$(EPOCBLDUREL)\TEST.in" \
+		--no-whole-archive $(LIBS)
+	dlltool --output-exp "TEST.exp" \
+		--base-file "$(EPOCBLDUREL)\TEST.bas" \
+		"$(EPOCTRGUREL)\EEXE.o" "$(EPOCBLDUREL)\TEST.in"  $(LIBS)
+	ld -s -e _E32Startup \
+		-Map "$(EPOCTRGUREL)\TEST.map" \
+		-o "$(EPOCBLDUREL)\TEST.EXE" "TEST.exp" \
+		"$(EPOCTRGUREL)\EEXE.o" \
+		--whole-archive "$(EPOCBLDUREL)\TEST.in" \
+		--no-whole-archive $(LIBS)
+	petran "$(EPOCBLDUREL)\TEST.EXE" $@ \
+		 -nocall -uid1 0x1000007a -uid2 0x00000000 -uid3 0x00000000
+#	del "TEST.exp"
+#	del "$(EPOCBLDUREL)\TEST.EXE"
+
+OBJECTS= \
+	$(EPOCBLDUREL)\TEST.o
+
+"$(EPOCBLDUREL)\TEST.in" : $(OBJECTS)
+	if exist $@ del $@
+	cd "$(EPOCBLDUREL)"
+	ar -M < <<
+CREATE $(@F)
+ADDMOD $(**F)
+SAVE
+END
+<<
+	ranlib $(@F)
+	cd "$(MAKEDIR)"
+
+
+# REAL TARGET - BUILD VARIANT UDEB
+
+CLEANUDEB : 
+	-$(ERASE) "..\..\EPOC32\RELEASE\MARM\UDEB\TEST.EXE"
+	-$(ERASE) "..\..\EPOC32\RELEASE\MARM\UDEB\TEST.map"
+	-$(ERASE) "..\..\EPOC32\BUILD\PROJEKTY\MARM\UDEB\TEST.in"
+	-$(ERASE) "..\..\EPOC32\BUILD\PROJEKTY\MARM\UDEB\TEST.bas"
+	-$(ERASE) "..\..\EPOC32\RELEASE\MARM\UDEB\TEST.sym"
+	-$(ERASE) "..\..\EPOC32\RELEASE\MARM\UDEB\TEST.lib"
+	-$(ERASE) "..\..\EPOC32\BUILD\PROJEKTY\MARM\UDEB\TEST.o"
+	-$(ERASE) "..\..\EPOC32\BUILD\PROJEKTY\MARM\UDEB\TESTU.def"
+
+
+MAKEWORKUDEB : "\EPOC32\RELEASE\MARM\UDEB" "\EPOC32\BUILD\PROJEKTY\MARM\UDEB"
+
+"\EPOC32\RELEASE\MARM\UDEB" : 
+	@if not exist "\EPOC32" md "\EPOC32"
+	@if not exist "\EPOC32\RELEASE" md "\EPOC32\RELEASE"
+	@if not exist "\EPOC32\RELEASE\MARM" md "\EPOC32\RELEASE\MARM"
+	@if not exist "\EPOC32\RELEASE\MARM\UDEB" md "\EPOC32\RELEASE\MARM\UDEB"
+
+"\EPOC32\BUILD\PROJEKTY\MARM\UDEB" : 
+	@if not exist "\EPOC32" md "\EPOC32"
+	@if not exist "\EPOC32\BUILD" md "\EPOC32\BUILD"
+	@if not exist "\EPOC32\BUILD\PROJEKTY" md "\EPOC32\BUILD\PROJEKTY"
+	@if not exist "\EPOC32\BUILD\PROJEKTY\MARM" md "\EPOC32\BUILD\PROJEKTY\MARM"
+	@if not exist "\EPOC32\BUILD\PROJEKTY\MARM\UDEB" md "\EPOC32\BUILD\PROJEKTY\MARM\UDEB"
+
+
+LIBS= \
+	"$(EPOCTRGUDEB)\EUSER.LIB"
+
+"$(EPOCTRGUDEB)\TEST.EXE" : "$(EPOCTRGUDEB)\EEXE.o" "$(EPOCBLDUDEB)\TEST.in" $(LIBS)
+	ld -e _E32Startup \
+		--base-file "$(EPOCBLDUDEB)\TEST.bas" \
+		-o "$(EPOCBLDUDEB)\TEST.EXE" "$(EPOCTRGUDEB)\EEXE.o" \
+		--whole-archive "$(EPOCBLDUDEB)\TEST.in" \
+		--no-whole-archive $(LIBS)
+	dlltool --output-exp "TEST.exp" \
+		--base-file "$(EPOCBLDUDEB)\TEST.bas" \
+		"$(EPOCTRGUDEB)\EEXE.o" "$(EPOCBLDUDEB)\TEST.in"  $(LIBS)
+	ld -e _E32Startup \
+		-Map "$(EPOCTRGUDEB)\TEST.map" \
+		-o "$(EPOCBLDUDEB)\TEST.EXE" "TEST.exp" \
+		"$(EPOCTRGUDEB)\EEXE.o" \
+		--whole-archive "$(EPOCBLDUDEB)\TEST.in" \
+		--no-whole-archive $(LIBS)
+	objcopy -X "$(EPOCBLDUDEB)\TEST.EXE" "$(EPOCTRGUDEB)\TEST.sym"
+	petran "$(EPOCBLDUDEB)\TEST.EXE" $@ \
+		 -nocall -uid1 0x1000007a -uid2 0x00000000 -uid3 0x00000000
+#	del "TEST.exp"
+#	del "$(EPOCBLDUDEB)\TEST.EXE"
+
+OBJECTS= \
+	$(EPOCBLDUDEB)\TEST.o
+
+"$(EPOCBLDUDEB)\TEST.in" : $(OBJECTS)
+	if exist $@ del $@
+	cd "$(EPOCBLDUDEB)"
+	ar -M < <<
+CREATE $(@F)
+ADDMOD $(**F)
+SAVE
+END
+<<
+	ranlib $(@F)
+	cd "$(MAKEDIR)"
+
+
+# SOURCES
+
+SUBPRJ=..\..\PROJEKTY\P1
+
+# Source TEST.CPP
+
+DEPEND=
+
+DEPENDREL=$(DEPEND)
+
+DEPENDDEB=$(DEPEND)
+
+DEPENDUREL=$(DEPEND)
+
+DEPENDUDEB=$(DEPEND)
+
+
+"$(EPOCBLDREL)\TEST.o": "$(SUBPRJ)\Test.cpp" $(DEPENDREL)
+	$(GCCREL) -I "$(SUBPRJ)\" $(INCDIR) -o $@ "$(SUBPRJ)\Test.cpp"
+
+"$(EPOCBLDDEB)\TEST.o": "$(SUBPRJ)\Test.cpp" $(DEPENDDEB)
+	$(GCCDEB) -I "$(SUBPRJ)\" $(INCDIR) -o $@ "$(SUBPRJ)\Test.cpp"
+
+"$(EPOCBLDUREL)\TEST.o": "$(SUBPRJ)\Test.cpp" $(DEPENDUREL)
+	$(GCCUREL) -I "$(SUBPRJ)\" $(INCDIR) -o $@ "$(SUBPRJ)\Test.cpp"
+
+"$(EPOCBLDUDEB)\TEST.o": "$(SUBPRJ)\Test.cpp" $(DEPENDUDEB)
+	$(GCCUDEB) -I "$(SUBPRJ)\" $(INCDIR) -o $@ "$(SUBPRJ)\Test.cpp"
+
+
+

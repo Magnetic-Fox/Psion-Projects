@@ -1,0 +1,14 @@
+// TEST.MMP
+//
+// Copyright (c) 2023 Magnetic-Fox
+
+TARGET			test.exe
+TARGETTYPE		exe
+UID				0
+UNICODEUID		0
+PROJECT			Projekty
+SUBPROJECT		P1
+SOURCE			test.cpp
+USERINCLUDE		\Projekty\P1
+SYSTEMINCLUDE	\epoc32\include
+LIBRARY			euser.lib
